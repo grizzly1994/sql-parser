@@ -3,137 +3,74 @@ package com.company.business;
 import com.company.LexemeType;
 import com.company.exception.ParserException;
 import com.company.model.Lexeme;
-import com.company.model.State;
+import com.company.model.test.*;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Set;
 
-import static com.company.LexemeType.*;
-import static java.util.Collections.singletonList;
-import static java.util.stream.Collectors.*;
+import static java.util.Collections.singleton;
 
 public class SyntacticalAnalyzer {
 
-    private Collection<State> currentStates;
+    private Collection<Position> positions;
 
     public SyntacticalAnalyzer() {
-        State root = new State();
-        State select = new State();
-        State from = new State();
-        State identifier = new State();
-        State alias = new State();
-        State table = new State();
-        State join = new State();
-        State condition = new State();
-        State operation = new State();
-        State junction = new State();
-
-        root.on(SELECT, select);
-
-        select
-            .on(IDENTIFIER, identifier);
-        select
-            .on(STAR)
-            .on(FROM, from);
-        select
-            .on(AGGREGATE)
-            .on(BRACKET_LEFT)
-            .on(IDENTIFIER)
-            .on(BRACKET_RIGHT)
-            .on(FROM, from);
-
-        identifier
-            .on(COMMA)
-            .on(IDENTIFIER, identifier);
-        identifier
-            .on(FROM, from);
-        identifier
-            .on(AS)
-            .on(IDENTIFIER, alias);
-
-        alias
-            .on(COMMA, select);
-        alias
-            .on(FROM, from);
-
-        from.on(IDENTIFIER, table);
-        from.on(IDENTIFIER)
-            .on(IDENTIFIER, table);
-
-        table
-            .end();
-        table
-            .on(COMMA, from);
-
-        table
-            .on(JOIN, join);
-        table
-            .on(INNER)
-            .on(JOIN, join);
-        table
-            .on(LEFT)
-            .on(JOIN, join);
-        table
-            .on(RIGHT)
-            .on(JOIN, join);
-
-        join.on(IDENTIFIER, condition);
-        join.on(IDENTIFIER)
-            .on(IDENTIFIER, condition);
-
-        condition
-            .on(ON).on(IDENTIFIER, operation);
-
-        operation
-            .on(EQ).on(IDENTIFIER, junction);
-        operation
-            .on(NE).on(IDENTIFIER, junction);
-        operation
-            .on(GT).on(IDENTIFIER, junction);
-        operation
-            .on(LT).on(IDENTIFIER, junction);
-        operation
-            .on(GE).on(IDENTIFIER, junction);
-        operation
-            .on(LE).on(IDENTIFIER, junction);
-
-        junction
-            .end();
-
-        junction
-            .on(AND, operation);
-        junction
-            .on(OR, operation);
-
-        junction
-            .on(JOIN, join);
-        junction
-            .on(INNER)
-            .on(JOIN, join);
-        junction
-            .on(LEFT)
-            .on(JOIN, join);
-        junction
-            .on(RIGHT)
-            .on(JOIN, join);
-
-        currentStates = singletonList(root);
+        Brunch star = new Brunch.Builder()
+            .next(new SimpleNode(LexemeType.STAR))
+            .build();
+        Brunch tables = new Brunch.Builder()
+            .next(new SimpleNode(LexemeType.IDENTIFIER))
+            .build();
+        Brunch select = new Brunch.Builder()
+            .next(new SimpleNode(LexemeType.SELECT))
+            .brunch(star)
+            .brunch(tables)
+            .build();
+        Brunch from = new Brunch.Builder()
+            .next(new SimpleNode(LexemeType.FROM))
+            .next(new SimpleNode(LexemeType.IDENTIFIER))
+            .build();
+        Brunch root = new Brunch.Builder()
+            .next(new NestedNode(select))
+            .next(new NestedNode(from))
+            .build();
+        positions = singleton(new Position(root, new Result()));
     }
 
-    public void parse(Lexeme lexeme) throws ParserException {
-        Collection<State> nextStates = new ArrayList<>();
-        for (State state : currentStates) {
-            Collection<State> states = state.parse(lexeme);
-            nextStates.addAll(states);
+    public void parse(Lexeme lexeme) {
+        Collection<Position> next = new ArrayList<>();
+        for (Position position : positions) {
+            Collection<Position> positions = position.next();
+            positions = parse(positions);
+            next.addAll(positions);
         }
-        if (lexeme.getType() == LexemeType.TERMINAL && nextStates.stream().noneMatch(State::isTerminal)) {
-            throw new ParserException(lexeme.getPosition(), getExpected(nextStates));
-        }
-        currentStates = nextStates;
+        positions = next;
     }
 
-    private static Set<LexemeType> getExpected(Collection<State> states) {
-        return states.stream().flatMap(state -> state.getExpected().stream()).collect(toSet());
+    private Collection<Position> parse(Collection<Position> positions) {
+        Collection<Position> next = new ArrayList<>();
+        for (Position position : positions) {
+            next.addAll(position.getNode().visit(new NodeVisitor<Collection<Position>>() {
+                @Override
+                public Collection<Position> visit(SimpleNode node) {
+                    return singleton(position);
+                }
+
+                @Override
+                public Collection<Position> visit(NestedNode node) {
+                    return new Position(node.getBrunch(), position.getResult(), position).next();
+                }
+            }));
+        }
+        return next;
+    }
+
+    public void end() throws ParserException {
+        for (Position position : positions) {
+            if (position.isComplete() && position.isTerminal()) {
+                return;
+            }
+        }
+        throw new ParserException();
     }
 }

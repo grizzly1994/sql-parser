@@ -37,7 +37,7 @@ public class LexicalAnalyzer {
         if (lexeme.length() > 0) {
             parseLexeme(position, lexeme.toString());
         }
-        syntacticalAnalyzer.parse(new Lexeme(position, LexemeType.TERMINAL, null));
+        syntacticalAnalyzer.end();
     }
 
     private void parseLexeme(Integer position, String lexeme) throws ParserException {
