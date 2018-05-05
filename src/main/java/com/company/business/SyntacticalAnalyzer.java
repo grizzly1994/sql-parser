@@ -18,8 +18,13 @@ public class SyntacticalAnalyzer {
         Brunch star = new Brunch.Builder()
             .next(new SimpleNode(LexemeType.STAR))
             .build();
+        Brunch multipleTables = new Brunch.Builder()
+            .next(new SimpleNode(LexemeType.COMMA))
+            .next(new SimpleNode(LexemeType.IDENTIFIER))
+            .build();
         Brunch tables = new Brunch.Builder()
             .next(new SimpleNode(LexemeType.IDENTIFIER))
+            .next(new NestedNode(multipleTables, Node.Flag.OPTIONAL))
             .build();
         Brunch select = new Brunch.Builder()
             .next(new SimpleNode(LexemeType.SELECT))
@@ -34,35 +39,45 @@ public class SyntacticalAnalyzer {
             .next(new NestedNode(select))
             .next(new NestedNode(from))
             .build();
-        positions = singleton(new Position(root, new Result()));
+        positions = singleton(Position.create(root, new Result()));
     }
 
     public void parse(Lexeme lexeme) {
         Collection<Position> next = new ArrayList<>();
         for (Position position : positions) {
-            Collection<Position> positions = position.next();
-            positions = parse(positions);
+            Collection<Position> positions = position.getNext();
+            positions = parse(positions, lexeme);
             next.addAll(positions);
         }
         positions = next;
     }
 
-    private Collection<Position> parse(Collection<Position> positions) {
-        Collection<Position> next = new ArrayList<>();
-        for (Position position : positions) {
-            next.addAll(position.getNode().visit(new NodeVisitor<Collection<Position>>() {
-                @Override
-                public Collection<Position> visit(SimpleNode node) {
-                    return singleton(position);
+    private Collection<Position> parse(Collection<Position> positions, Lexeme lexeme) {
+        Collection<Position> simple = new ArrayList<>();
+        Collection<Position> nested = positions;
+        do {
+            Collection<Position> result = new ArrayList<>();
+            for (Position position : nested) {
+                if (position.getNode().getFlags().contains(Node.Flag.OPTIONAL)) {
+                    result.addAll(position.getNext());
                 }
+                position.getNode().visit(new NodeVisitor() {
+                    @Override
+                    public void visit(SimpleNode node) {
+                        if (ObjectUtils.equals(lexeme.getType(), node.getLexemeType())) {
+                            simple.add(position);
+                        }
+                    }
 
-                @Override
-                public Collection<Position> visit(NestedNode node) {
-                    return new Position(node.getBrunch(), position.getResult(), position).next();
-                }
-            }));
-        }
-        return next;
+                    @Override
+                    public void visit(NestedNode node) {
+                        result.addAll(Position.create(node.getBrunch(), position.getResult(), position).getNext());
+                    }
+                });
+            }
+            nested = result;
+        } while (!nested.isEmpty());
+        return simple;
     }
 
     public void end() throws ParserException {

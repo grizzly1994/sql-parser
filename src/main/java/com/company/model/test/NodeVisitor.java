@@ -1,6 +1,6 @@
 package com.company.model.test;
 
-public interface NodeVisitor<TResult> {
-    TResult visit(SimpleNode node);
-    TResult visit(NestedNode node);
+public interface NodeVisitor {
+    void visit(SimpleNode node);
+    void visit(NestedNode node);
 }

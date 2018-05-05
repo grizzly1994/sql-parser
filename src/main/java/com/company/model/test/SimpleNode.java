@@ -2,38 +2,29 @@ package com.company.model.test;
 
 import com.company.LexemeType;
 
+import java.util.Collection;
 import java.util.HashSet;
-import java.util.Set;
 
 import static java.util.Arrays.asList;
-import static java.util.Collections.unmodifiableSet;
 
 public class SimpleNode implements Node {
 
     private final LexemeType lexemeType;
     private final Reducer reducer;
-    private final Set<Setting> settings;
+    private final Collection<Flag> flags;
 
-    public SimpleNode(LexemeType lexemeType, Reducer reducer, Setting... settings) {
+    public SimpleNode(LexemeType lexemeType, Reducer reducer, Flag... flags) {
         this.lexemeType = lexemeType;
         this.reducer = reducer;
-        this.settings = new HashSet<>(asList(settings));
+        this.flags = new HashSet<>(asList(flags));
     }
 
-    public SimpleNode(LexemeType lexemeType, Setting... settings) {
-        this(lexemeType, result -> result, settings);
+    public SimpleNode(LexemeType lexemeType, Flag... flags) {
+        this(lexemeType, result -> result, flags);
     }
 
     public LexemeType getLexemeType() {
         return lexemeType;
-    }
-
-    public boolean isRequired() {
-        return settings.contains(Setting.REQUIRED);
-    }
-
-    public boolean isRepeatable() {
-        return settings.contains(Setting.REPEATABLE);
     }
 
     public Result reducer(Result result) {
@@ -41,16 +32,16 @@ public class SimpleNode implements Node {
     }
 
     @Override
-    public <TResult> TResult visit(NodeVisitor<TResult> visitor) {
-        return visitor.visit(this);
+    public void visit(NodeVisitor visitor) {
+        visitor.visit(this);
+    }
+
+    @Override
+    public Collection<Flag> getFlags() {
+        return flags;
     }
 
     public interface Reducer {
         Result reduce(Result result);
-    }
-
-    public enum Setting {
-        REQUIRED,
-        REPEATABLE
     }
 }

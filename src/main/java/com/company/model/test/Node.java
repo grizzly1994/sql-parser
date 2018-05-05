@@ -1,5 +1,12 @@
 package com.company.model.test;
 
+import java.util.Collection;
+
 public interface Node {
-    <TResult> TResult visit(NodeVisitor<TResult> visitor);
+    void visit(NodeVisitor visitor);
+    Collection<Flag> getFlags();
+
+    enum Flag {
+        OPTIONAL
+    }
 }

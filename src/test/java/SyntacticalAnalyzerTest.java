@@ -22,15 +22,35 @@ public class SyntacticalAnalyzerTest {
 
     @Test
     public void test2() {
-        test("SELECT col1 FROM SOME_TABLE123");
+        testFail("SELECT1 * FROM SOME_TABLE123");
     }
 
     @Test
     public void test3() {
-        test("SELECT col1, col2 FROM SOME_TABLE123");
+        testFail("SELECT *1 FROM SOME_TABLE123");
     }
 
     @Test
+    public void test4() {
+        testFail("SELECT * FROM1 SOME_TABLE123");
+    }
+
+    @Test
+    public void test5() {
+        testFail("SELECT * FROM 123SOME_TABLE");
+    }
+
+    @Test
+    public void test6() {
+        test("SELECT col1 FROM SOME_TABLE123");
+    }
+
+    @Test
+    public void test7() {
+        test("SELECT col1, col2, col3 FROM SOME_TABLE123");
+    }
+
+    /*@Test
     public void test4() {
         test("SELECT col1 AS alias1, col2 AS alias2 FROM SOME_TABLE123");
     }
@@ -103,7 +123,7 @@ public class SyntacticalAnalyzerTest {
     @Test
     public void test18() {
         test("SELECT * FROM TABLE1 JOIN TABLE2 ON a = b RIGHT JOIN TABLE3 ON c = d");
-    }
+    }*/
 
     private void test(String query) {
         try {
@@ -113,10 +133,10 @@ public class SyntacticalAnalyzerTest {
         }
     }
 
-    private void testError(String query) {
+    private void testFail(String query) {
         try {
             lexicalAnalyzer.parse(query);
-        } catch (Throwable throwable) {
+        } catch (ParserException ex) {
             return;
         }
         Assert.fail("Incorrect query executed: " + query);

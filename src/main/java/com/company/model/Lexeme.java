@@ -5,12 +5,12 @@ import com.company.LexemeType;
 public class Lexeme {
 
     private final int position;
-    private final LexemeType type;
+    private final LexemeType lexemeType;
     private final String text;
 
-    public Lexeme(int position, LexemeType type, String text) {
+    public Lexeme(int position, LexemeType lexemeType, String text) {
         this.position = position;
-        this.type = type;
+        this.lexemeType = lexemeType;
         this.text = text;
     }
 
@@ -19,7 +19,7 @@ public class Lexeme {
     }
 
     public LexemeType getType() {
-        return type;
+        return lexemeType;
     }
 
     public String getText() {
@@ -28,6 +28,6 @@ public class Lexeme {
 
     @Override
     public String toString() {
-        return "Lexeme { position: '" + position + "', type: '" + type + "', text: '" + text + "' }";
+        return "Lexeme { position: '" + position + "', type: '" + lexemeType + "', text: '" + text + "' }";
     }
 }
